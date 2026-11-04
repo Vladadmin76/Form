@@ -99,6 +99,7 @@ type Actions = {
   removeCustomFood: (id: string) => void;
   addRecipe: (recipe: Recipe) => void;
   removeRecipe: (id: string) => void;
+  dedupeCatalog: () => void;
   setFasting: (fasting: Fasting) => void;
   setWaterGoal: (ml: number) => void;
   setReminders: (reminders: Reminder[]) => void;
@@ -129,6 +130,25 @@ const emptyData = (): Data => ({
   pieceWeights: {},
   pieceKcals: {},
 });
+
+// Точные копии в базе продуктов и рецептов: совпадают название и все цифры.
+function foodKey(food: FoodItem): string {
+  return `${food.name.trim().toLowerCase()}|${food.barcode ?? ""}|${JSON.stringify(roundNutrients(food.per100))}`;
+}
+
+function recipeKey(recipe: Recipe): string {
+  return `${recipe.name.trim().toLowerCase()}|${recipe.servings}|${JSON.stringify(roundNutrients(recipe.perServing))}|${recipe.ingredients.length}`;
+}
+
+function dedupeBy<T>(list: T[], key: (item: T) => string): T[] {
+  const seen = new Set<string>();
+  return list.filter((item) => {
+    const k = key(item);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
 
 export const useForma = create<Data & Ui & Actions>()(
   persist(
@@ -178,7 +198,12 @@ export const useForma = create<Data & Ui & Actions>()(
       },
       addActivity: (entry) => set({ activities: [{ ...entry, id: uid() }, ...get().activities] }),
       removeActivity: (id) => set({ activities: get().activities.filter((item) => item.id !== id) }),
-      addCustomFood: (food) => set({ customFoods: [food, ...get().customFoods.filter((item) => item.id !== food.id)] }),
+      addCustomFood: (food) => {
+        const list = get().customFoods;
+        const key = foodKey(food);
+        if (list.some((item) => item.id !== food.id && foodKey(item) === key)) return;
+        set({ customFoods: [food, ...list.filter((item) => item.id !== food.id)] });
+      },
       saveFoodProfile: (food, per100) => {
         const next = roundNutrients(per100);
         const list = get().customFoods;
@@ -216,8 +241,20 @@ export const useForma = create<Data & Ui & Actions>()(
         });
       },
       removeCustomFood: (id) => set({ customFoods: get().customFoods.filter((item) => item.id !== id) }),
-      addRecipe: (recipe) => set({ recipes: [recipe, ...get().recipes.filter((item) => item.id !== recipe.id)] }),
+      addRecipe: (recipe) => {
+        const list = get().recipes;
+        const key = recipeKey(recipe);
+        if (list.some((item) => item.id !== recipe.id && recipeKey(item) === key)) return;
+        set({ recipes: [recipe, ...list.filter((item) => item.id !== recipe.id)] });
+      },
       removeRecipe: (id) => set({ recipes: get().recipes.filter((item) => item.id !== id) }),
+      dedupeCatalog: () => {
+        const foods = dedupeBy(get().customFoods, foodKey);
+        const recipes = dedupeBy(get().recipes, recipeKey);
+        if (foods.length !== get().customFoods.length || recipes.length !== get().recipes.length) {
+          set({ customFoods: foods, recipes });
+        }
+      },
       setFasting: (fasting) => set({ fasting }),
       setWaterGoal: (ml) => {
         const profile = get().profile;
@@ -300,8 +337,8 @@ export const useForma = create<Data & Ui & Actions>()(
           logs: data.logs,
           activities: data.activities,
           water: data.water,
-          customFoods: data.customFoods,
-          recipes: data.recipes,
+          customFoods: dedupeBy(data.customFoods, foodKey),
+          recipes: dedupeBy(data.recipes, recipeKey),
           fasting: data.fasting ?? defaultFasting(),
           reminders: data.reminders ?? defaultReminders(),
           adaptive: data.adaptive ?? defaultAdaptive(),

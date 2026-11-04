@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, Mic, ScanBarcode, Search, ChefHat, PenLine } from "lucide-react";
+import { Camera, Mic, ScanBarcode, Search, ChefHat, PenLine, Trash2 } from "lucide-react";
 import { recognizeDish } from "@/lib/ai";
 import { decodeBarcodeFile, blurScore, lockFocus, productReader } from "@/lib/barcode";
 import { findByBarcode, normalizeQuery, searchFoods } from "@/lib/foods";
@@ -69,6 +69,7 @@ function useLog() {
 
 function SearchPane() {
   const custom = useForma((state) => state.customFoods);
+  const removeCustomFood = useForma((state) => state.removeCustomFood);
   const recipes = useForma((state) => state.recipes);
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<FoodItem | null>(null);
@@ -94,13 +95,27 @@ function SearchPane() {
           </li>
         ))}
         {foods.map((item) => (
-          <li key={item.id}>
+          <li key={item.id} className="flex items-stretch gap-2">
             <button type="button" className="card flex w-full items-center justify-between px-4 py-3 text-left" onClick={() => { setPicked(item); setRecipe(null); blurField(); }}>
               <span>
                 {item.name}
                 <span className="block text-sm text-muted">{fmt(item.per100.kcal)} ккал / 100 г</span>
               </span>
             </button>
+            {item.custom ? (
+              <button
+                type="button"
+                className="card flex min-w-12 items-center justify-center px-3 text-muted"
+                aria-label={`Удалить ${item.name} из моей базы`}
+                onClick={() => {
+                  if (!window.confirm(`Удалить «${item.name}» из моей базы?`)) return;
+                  removeCustomFood(item.id);
+                  if (picked?.id === item.id) setPicked(null);
+                }}
+              >
+                <Trash2 className="size-4" />
+              </button>
+            ) : null}
           </li>
         ))}
       </ul>

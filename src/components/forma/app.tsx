@@ -22,7 +22,10 @@ export function FormaApp() {
   useEffect(() => {
     void Promise.resolve(useForma.persist.rehydrate())
       .catch(() => undefined)
-      .finally(() => setReady(true));
+      .finally(() => {
+        useForma.getState().dedupeCatalog();
+        setReady(true);
+      });
   }, []);
   if (!ready) {
     return (
