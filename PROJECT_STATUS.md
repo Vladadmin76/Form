@@ -31,7 +31,7 @@
   инструкция `docs/cloudflare.md`. Проверено локально в `wrangler dev` (среда Workers): сайт, PWA-манифест, установочная
   страница, статика, фраза дня, чтение `DEEPSEEK_API_KEY` из окружения (тестовый ключ дошёл до DeepSeek, ответ 401).
   На настоящем Cloudflare не выкладывалось: нужен секрет `CLOUDFLARE_API_TOKEN` в репозитории и секрет `DEEPSEEK_API_KEY` в Worker'е.
-- Деплой: не выполнен. Основной путь — Cloudflare (`docs/cloudflare.md`). `docs/server.md` — запасной вариант со своим сервером (устарел: пресет теперь Cloudflare, для сервера нужен `node-server`).
+- Деплой выполнен 2026-11-04: https://forma.ladimir2013.workers.dev (Cloudflare Workers, Worker `forma`, запуск `Run workflow` в Actions, run #2). Сайт отвечает 200, манифест 200. Токен `CLOUDFLARE_API_TOKEN` в Secrets репозитория. Ключ `DEEPSEEK_API_KEY` в Worker'е ещё не задан (до этого фраза дня из запасных, фото блюда недоступно). Основной путь — Cloudflare (`docs/cloudflare.md`). `docs/server.md` — запасной вариант со своим сервером (устарел: пресет теперь Cloudflare, для сервера нужен `node-server`).
 
 ## Нельзя
 Не включать вход через Grok, не подключать БД, не возвращать пресет `vercel`, не переписывать `src/lib/ai.ts`.
