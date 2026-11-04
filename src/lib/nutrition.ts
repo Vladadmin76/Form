@@ -184,8 +184,13 @@ export function targetForDate(profile: Profile, adaptive: AdaptiveState, fasting
   return base;
 }
 
-export function waterGoalFor(weightKg: number): number {
-  return Math.max(1500, Math.round((weightKg * 35) / 50) * 50);
+// Цель по воде: 30 мл на кг, но не больше нормы EFSA по напиткам
+// (мужчины 2000 мл, женщины 1600 мл) и не меньше 1500 мл.
+// Больше можно поставить вручную в профиле.
+export function waterGoalFor(weightKg: number, sex: Sex): number {
+  const cap = sex === "male" ? 2000 : 1600;
+  const byWeight = Math.round((weightKg * 30) / 50) * 50;
+  return Math.max(1500, Math.min(cap, byWeight));
 }
 
 export function rdi(sex: Sex, key: MicroKey): number {

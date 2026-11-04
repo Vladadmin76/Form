@@ -105,7 +105,7 @@ export function TodayScreen() {
         count: cached?.count ?? 0,
         fromGrok: false,
       });
-      setBanner("Grok недоступен, показана запасная фраза.");
+      setBanner("Фраза дня недоступна, показана запасная фраза.");
     }
     setBusy(false);
   };
@@ -197,7 +197,7 @@ export function TodayScreen() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-sm text-muted">Фраза дня</p>
-            <p className="mt-1">{phrase ?? "Короткая фраза по сегодняшнему дню, через Grok."}</p>
+            <p className="mt-1">{phrase ?? "Короткая фраза по сегодняшнему дню, через DeepSeek."}</p>
           </div>
           <button type="button" className="btn btn-primary h-11 shrink-0 px-3" onClick={() => void speak()} disabled={busy}>
             <Sparkles className="size-4" />

@@ -82,7 +82,7 @@ function Ready() {
           <ProfileForm
             initial={null}
             submitLabel="Начать"
-            onSubmit={(next) => saveProfile({ ...next, waterGoalMl: next.waterGoalMl || waterGoalFor(next.weightKg) }, { asNew: true })}
+            onSubmit={(next) => saveProfile({ ...next, waterGoalMl: next.waterGoalMl || waterGoalFor(next.weightKg, next.sex) }, { asNew: true })}
           />
         </div>
       </main>

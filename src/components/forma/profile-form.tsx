@@ -204,7 +204,7 @@ function parseDraft(draft: Draft, initial: Profile | null): {
   const floor = calorieFloor(draft.sex);
   const raw = burn - draft.deficit;
   const target = Math.max(floor, raw);
-  const water = draft.water ? Number(draft.water) : initial?.waterGoalMl || waterGoalFor(weight);
+  const water = draft.water ? Number(draft.water) : initial?.waterGoalMl || waterGoalFor(weight, draft.sex);
   if (!water || water < 500 || water > 6000) {
     return { profile: null, error: "Цель по воде: от 500 до 6000 мл.", view: null };
   }
