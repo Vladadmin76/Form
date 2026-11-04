@@ -10,3 +10,5 @@ artifacts
 attachments
 screenshots
 .vercel
+.wrangler
+.dev.vars

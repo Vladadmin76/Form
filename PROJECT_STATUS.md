@@ -26,9 +26,12 @@
   Запасные фразы (по 8 на тон, `src/lib/phrases.ts`) работают без ключа. В подписи слово DeepSeek убрано. В профиле честно указано,
   что цифры за вчера (без имени) и фото обрабатывает внешний сервис ИИ. Ответ DeepSeek вживую не проверялся (нет ключа).
 - Известно: `npm test` даёт 8 падений (тесты превью-карточек og и PWA из шаблона Grok), они есть и без наших правок.
-- Планируется: выкладка на Cloudflare Workers (бесплатно, отдельный Worker `forma`, пресет Nitro `cloudflare_module`,
-  автодеплой через GitHub Actions, секреты `CLOUDFLARE_API_TOKEN` и `DEEPSEEK_API_KEY`). Не начато.
-- Деплой на сервер: не выполнен (делает пользователь по `docs/server.md`).
+- 2026-11-04: проект переведён на Cloudflare Workers (бесплатно, отдельный Worker `forma`): пресет Nitro `cloudflare_module`
+  в `vite.config.ts`, `wrangler` в devDependencies, автодеплой `.github/workflows/deploy.yml` (пуш в `main`),
+  инструкция `docs/cloudflare.md`. Проверено локально в `wrangler dev` (среда Workers): сайт, PWA-манифест, установочная
+  страница, статика, фраза дня, чтение `DEEPSEEK_API_KEY` из окружения (тестовый ключ дошёл до DeepSeek, ответ 401).
+  На настоящем Cloudflare не выкладывалось: нужен секрет `CLOUDFLARE_API_TOKEN` в репозитории и секрет `DEEPSEEK_API_KEY` в Worker'е.
+- Деплой: не выполнен. Основной путь — Cloudflare (`docs/cloudflare.md`). `docs/server.md` — запасной вариант со своим сервером (устарел: пресет теперь Cloudflare, для сервера нужен `node-server`).
 
 ## Нельзя
 Не включать вход через Grok, не подключать БД, не возвращать пресет `vercel`, не переписывать `src/lib/ai.ts`.

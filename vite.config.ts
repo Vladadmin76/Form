@@ -170,7 +170,15 @@ export default defineConfig(({ command, isPreview }) => ({
     ...(command === "build" || isPreview
       ? [
           nitro({
-            preset: "node-server",
+            preset: "cloudflare_module",
+            // Отдельный Worker «forma», не связан с другими проектами.
+            cloudflare: {
+              wrangler: {
+                name: "forma",
+                compatibility_date: "2026-09-01",
+                compatibility_flags: ["nodejs_compat"],
+              },
+            },
             // Auto-registers server/middleware/* (the PWA install page +
             // manifest + head-tag middleware). Nitro v3 defaults serverDir to
             // false, so removing this silently unwires /?install=1 on deploys.

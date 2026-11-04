@@ -1,0 +1,35 @@
+name: Deploy to Cloudflare Workers
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_AUTH_ENABLED: "false"
+
+      - name: Deploy Worker
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: npx wrangler deploy
+
+      - name: Deploy skipped
+        if: env.CLOUDFLARE_API_TOKEN == ''
+        run: echo "::notice::Секрет CLOUDFLARE_API_TOKEN не задан, деплой пропущен. См. docs/cloudflare.md"
