@@ -624,7 +624,6 @@ function BarcodePane() {
             className="sr-only"
             type="file"
             accept="image/*"
-            capture="environment"
             onChange={(event) => {
               const file = event.target.files?.[0];
               event.target.value = "";

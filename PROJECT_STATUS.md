@@ -31,6 +31,7 @@
   инструкция `docs/cloudflare.md`. Проверено локально в `wrangler dev` (среда Workers): сайт, PWA-манифест, установочная
   страница, статика, фраза дня, чтение `DEEPSEEK_API_KEY` из окружения (тестовый ключ дошёл до DeepSeek, ответ 401).
   На настоящем Cloudflare не выкладывалось: нужен секрет `CLOUDFLARE_API_TOKEN` в репозитории и секрет `DEEPSEEK_API_KEY` в Worker'е.
+- 2026-11-04: штрихкод, «Фото кода»: убран `capture` у файлового поля, теперь телефон предлагает и снять, и выбрать из галереи. «Сфотографировать» (блюдо) не менялось, сразу открывает камеру. Не проверено на настоящем iPhone.
 - Деплой выполнен 2026-11-04: https://forma.ladimir2013.workers.dev (Cloudflare Workers, Worker `forma`, запуск `Run workflow` в Actions, run #2). Сайт отвечает 200, манифест 200. Токен `CLOUDFLARE_API_TOKEN` в Secrets репозитория. Ключ `DEEPSEEK_API_KEY` в Worker'е ещё не задан (до этого фраза дня из запасных, фото блюда недоступно). Основной путь — Cloudflare (`docs/cloudflare.md`). `docs/server.md` — запасной вариант со своим сервером (устарел: пресет теперь Cloudflare, для сервера нужен `node-server`).
 
 ## Нельзя
