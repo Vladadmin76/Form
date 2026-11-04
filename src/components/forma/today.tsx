@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Droplets, Plus, Sparkles, Trash2 } from "lucide-react";
 import { askMotivation } from "@/lib/ai";
 import { fmt, fmtDay } from "@/lib/format";
@@ -9,12 +9,12 @@ import {
   formatMinutes,
   macroTargets,
   metKcal,
-  motivationTone,
   proteinGoal,
   stepsKcal,
   streakInfo,
   targetForDate,
   weightTrend,
+  yesterdayTone,
 } from "@/lib/nutrition";
 import { fallbackPhrase } from "@/lib/phrases";
 import { useForma } from "@/lib/store";
@@ -52,6 +52,13 @@ export function TodayScreen() {
   const revertAdaptive = useForma((state) => state.revertAdaptive);
   const dismissNotice = useForma((state) => state.dismissNotice);
   const [busy, setBusy] = useState(false);
+  const autoAsked = useRef(false);
+  const speakRef = useRef<(auto?: boolean) => Promise<void>>(async () => {});
+  useEffect(() => {
+    if (autoAsked.current) return;
+    autoAsked.current = true;
+    void speakRef.current(true);
+  }, []);
   const [steps, setSteps] = useState("");
   const [minutes, setMinutes] = useState("30");
   const [customKcal, setCustomKcal] = useState("");
@@ -76,39 +83,45 @@ export function TodayScreen() {
     setTab("food");
   };
 
-  const speak = async () => {
+  // Фраза дня строится по вчерашнему дню и появляется сама при открытии нового дня.
+  const speak = async (auto = false) => {
     if (busy) return;
-    const tone = motivationTone(streak);
     const cached = motivation && motivation.date === today ? motivation : null;
+    if (auto && cached) return;
     if (cached && cached.count >= 3) {
       setBanner("На сегодня хватит трёх фраз.");
       return;
     }
     setBusy(true);
+    const past = yesterdayTone(profile, adaptive, fasting, logs, activities, today);
+    const yTotals = dayTotals(logs, activities, past.date);
+    const count = (cached?.count ?? 0) + 1;
     const context = {
-      tone,
-      streak: streak.ongoing,
-      before: streak.beforeToday,
-      net: totals.net,
-      target,
-      protein: totals.food.protein,
+      tone: past.tone,
+      streak: past.before,
+      before: past.before,
+      net: yTotals.net,
+      target: targetForDate(profile, adaptive, fasting, past.date),
+      protein: yTotals.food.protein,
       proteinGoal: proteinGoal(profile),
       trend: weightTrend(weights),
     };
-    const result = await askMotivation({ data: context });
+    const result = await askMotivation({ data: context }).catch(() => ({ ok: false as const, error: "" }));
     if (result.ok) {
-      setMotivation({ date: today, text: result.text, count: (cached?.count ?? 0) + 1, fromGrok: true });
+      setMotivation({ date: today, text: result.text, count, fromGrok: true });
     } else {
       setMotivation({
         date: today,
-        text: fallbackPhrase(tone, today + tone),
-        count: cached?.count ?? 0,
+        text: fallbackPhrase(past.tone, today + past.tone + count),
+        count,
         fromGrok: false,
       });
-      setBanner("Фраза дня недоступна, показана запасная фраза.");
+      if (!auto) setBanner("Фраза дня недоступна, показана запасная фраза.");
     }
     setBusy(false);
   };
+
+  speakRef.current = speak;
 
   return (
     <div className="flex flex-col gap-3 px-5 pt-6">
@@ -197,9 +210,9 @@ export function TodayScreen() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-sm text-muted">Фраза дня</p>
-            <p className="mt-1">{phrase ?? "Короткая фраза по сегодняшнему дню, через DeepSeek."}</p>
+            <p className="mt-1">{phrase ?? (busy ? "Подбираю фразу…" : date === today ? "Нажмите «Спросить», чтобы получить фразу дня." : "Фраза дня показывается только за сегодня.")}</p>
           </div>
-          <button type="button" className="btn btn-primary h-11 shrink-0 px-3" onClick={() => void speak()} disabled={busy}>
+          <button type="button" className="btn btn-primary h-11 shrink-0 px-3" onClick={() => void speak(false)} disabled={busy}>
             <Sparkles className="size-4" />
             {busy ? "…" : phrase ? "Ещё" : "Спросить"}
           </button>

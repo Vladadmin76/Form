@@ -292,6 +292,32 @@ export function motivationTone(info: { ongoing: number; today: DayStatus }): Ton
   return "neutral";
 }
 
+// Тон фразы дня строится по ВЧЕРАШНЕМУ дню.
+// Новый профиль или вчера нет записей — нейтральный (только тёплый настрой).
+export function yesterdayTone(
+  profile: Profile,
+  adaptive: AdaptiveState,
+  fasting: Fasting,
+  logs: LogEntry[],
+  activities: ActivityEntry[],
+  today: string,
+): { tone: Tone; before: number; date: string } {
+  const date = addDays(today, -1);
+  const status = dayStatus(profile, adaptive, fasting, logs, activities, date, today);
+  if (status === "slip") return { tone: "slip", before: 0, date };
+  if (status === "good") {
+    let run = 0;
+    let cursor = date;
+    while (dayStatus(profile, adaptive, fasting, logs, activities, cursor, today) === "good") {
+      run += 1;
+      cursor = addDays(cursor, -1);
+      if (run > 400) break;
+    }
+    return { tone: run >= 3 ? "streak" : "good", before: run, date };
+  }
+  return { tone: "neutral", before: 0, date };
+}
+
 export function weightTrend(weights: WeightEntry[]): WeightTrend {
   if (weights.length < 2) return "unknown";
   const sorted = [...weights].sort((a, b) => a.date.localeCompare(b.date));

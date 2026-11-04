@@ -44,15 +44,19 @@ export const askMotivation = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const apiKey = process.env.DEEPSEEK_API_KEY;
     if (!apiKey) return { ok: false as const, error: "Фраза сейчас недоступна" };
-    const prompt = `Контекст дневника питания, это не диагноз:
-тон: ${data.tone}
-серия дней в цели до сегодня: ${data.before}
-сегодня в цели подряд, если день уже закрыт удачно: ${data.streak}
-факт ${Math.round(data.net)} ккал при цели ${Math.round(data.target)}
-белок ${Math.round(data.protein)} г из ориентира ${Math.round(data.proteinGoal)} г
+    const toneHint: Record<Tone, string> = {
+      neutral: "Новый профиль или вчера записей не было. Только тёплый позитивный настрой на сегодня. Не упоминай цифры, пропуски и серии.",
+      good: "Вчера уложился в цель. Искренне похвали и поддержи.",
+      streak: `Несколько дней подряд в цели (${data.before}). Отметь устойчивый ритм без пафоса.`,
+      slip: "Вчера вышло выше цели. Поддержи мягко, без упрёков и без слов «срыв» и «нарушил». Скажи, что сегодня новый день.",
+    };
+    const prompt = `Контекст дневника питания за вчерашний день, это не диагноз:
+${toneHint[data.tone]}
+вчера: ${Math.round(data.net)} ккал при цели ${Math.round(data.target)}
+белок вчера: ${Math.round(data.protein)} г из ориентира ${Math.round(data.proteinGoal)} г
 тренд веса: ${data.trend}
 
-Напиши одну фразу на русском. Спокойно, на «ты», без стыда, без медицинских обещаний и без спортивного пафоса. 12–20 слов. Без кавычек и без эмодзи.`;
+Напиши одну подбадривающую фразу на сегодня на русском. Спокойно, на «ты», без стыда, без медицинских обещаний и без спортивного пафоса. 12–20 слов. Без кавычек и без эмодзи. Каждый день фраза должна звучать по-новому.`;
     try {
       const res = await fetch("https://api.deepseek.com/chat/completions", {
         method: "POST",
@@ -62,7 +66,7 @@ export const askMotivation = createServerFn({ method: "POST" })
           model: "deepseek-flash",
           thinking: { type: "disabled" },
           max_tokens: 120,
-          temperature: 0.7,
+          temperature: 0.9,
           messages: [
             {
               role: "system",
