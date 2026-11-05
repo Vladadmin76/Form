@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Droplets, Plus, Sparkles, Trash2 } from "lucide-react";
+import { CalendarDays, Droplets, Plus, Sparkles, Trash2 } from "lucide-react";
 import { askMotivation } from "@/lib/ai";
 import { fmt, fmtDay } from "@/lib/format";
 import {
@@ -20,6 +20,7 @@ import { fallbackPhrase } from "@/lib/phrases";
 import { useForma } from "@/lib/store";
 import type { ActivityKind, MealSlot } from "@/lib/types";
 import { Bar, Card, mealLabel, meals } from "@/components/forma/bits";
+import { CalendarSheet } from "@/components/forma/calendar";
 
 const WORKOUTS: { kind: Exclude<ActivityKind, "steps" | "custom">; label: string; met: number }[] = [
   { kind: "walk", label: "Ходьба", met: 3.5 },
@@ -39,7 +40,6 @@ export function TodayScreen() {
   const adaptive = useForma((state) => state.adaptive);
   const motivation = useForma((state) => state.motivation);
   const weights = useForma((state) => state.weights);
-  const shiftDate = useForma((state) => state.shiftDate);
   const setDate = useForma((state) => state.setDate);
   const removeLog = useForma((state) => state.removeLog);
   const addWater = useForma((state) => state.addWater);
@@ -52,6 +52,7 @@ export function TodayScreen() {
   const revertAdaptive = useForma((state) => state.revertAdaptive);
   const dismissNotice = useForma((state) => state.dismissNotice);
   const [busy, setBusy] = useState(false);
+  const [calOpen, setCalOpen] = useState(false);
   const autoAsked = useRef(false);
   const speakRef = useRef<(auto?: boolean) => Promise<void>>(async () => {});
   useEffect(() => {
@@ -135,23 +136,25 @@ export function TodayScreen() {
           <p className="font-display text-3xl tabular-nums">{streak.ongoing}</p>
         </div>
       </header>
-      <div className="flex items-center justify-between">
-        <button type="button" className="flex size-11 items-center justify-center rounded-md bg-surface-2" aria-label="Предыдущий день" onClick={() => shiftDate(-1)}>
-          <ChevronLeft className="size-5" />
-        </button>
-        <button type="button" className="text-sm font-semibold text-muted" onClick={() => setDate(today)}>
+      <div className="grid grid-cols-2 gap-2">
+        <button type="button" className="chip w-full justify-center" data-on={date === today} onClick={() => setDate(today)}>
           Сегодня
         </button>
-        <button
-          type="button"
-          className="flex size-11 items-center justify-center rounded-md bg-surface-2 disabled:opacity-40"
-          aria-label="Следующий день"
-          disabled={date >= today}
-          onClick={() => shiftDate(1)}
-        >
-          <ChevronRight className="size-5" />
+        <button type="button" className="chip inline-flex w-full items-center justify-center gap-2" onClick={() => setCalOpen(true)}>
+          <CalendarDays className="size-4" />
+          Календарь
         </button>
       </div>
+      {calOpen ? (
+        <CalendarSheet
+          selected={date}
+          onClose={() => setCalOpen(false)}
+          onPick={(picked) => {
+            setDate(picked);
+            setCalOpen(false);
+          }}
+        />
+      ) : null}
 
       {adaptive.notice ? (
         <Card>
