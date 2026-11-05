@@ -203,10 +203,8 @@ function PortionFood({ food, onClose }: { food: FoodItem; onClose: () => void })
   const key = food.barcode || food.id;
   const savedGrams = useForma((state) => state.pieceWeights[key] || (!food.pieceKcal ? food.pieceGrams || 0 : 0));
   const savedKcal = useForma((state) => state.pieceKcals[key] || food.pieceKcal || 0);
-  const [mode, setMode] = useState<"g" | "pc">(savedGrams || savedKcal ? "pc" : "g");
   const [unit, setUnit] = useState<"g" | "kcal">(savedKcal ? "kcal" : "g");
-  const [grams, setGrams] = useState("100");
-  const [pieceG, setPieceG] = useState(savedGrams ? trimNum(savedGrams) : "");
+  const [pieceG, setPieceG] = useState(savedGrams ? trimNum(savedGrams) : "100");
   const [pieceK, setPieceK] = useState(savedKcal ? trimNum(savedKcal) : "");
   const [count, setCount] = useState("1");
   const pieces = num(count);
@@ -214,101 +212,68 @@ function PortionFood({ food, onClose }: { food: FoodItem; onClose: () => void })
   const oneK = num(pieceK);
   const perKcal = per100.kcal;
   const amount =
-    mode === "g"
-      ? num(grams)
-      : unit === "g"
-        ? oneG > 0 && pieces > 0
-          ? oneG * pieces
-          : 0
-        : perKcal > 0 && oneK > 0 && pieces > 0
-          ? (oneK * pieces * 100) / perKcal
-          : 0;
+    unit === "g"
+      ? oneG > 0 && pieces > 0
+        ? oneG * pieces
+        : 0
+      : perKcal > 0 && oneK > 0 && pieces > 0
+        ? (oneK * pieces * 100) / perKcal
+        : 0;
   const nutrients =
     amount > 0
       ? scaleNutrients(per100, amount)
-      : mode === "pc" && unit === "kcal" && perKcal <= 0 && oneK > 0 && pieces > 0
+      : unit === "kcal" && perKcal <= 0 && oneK > 0 && pieces > 0
         ? { ...ZERO, kcal: Math.round(oneK * pieces) }
         : { ...ZERO };
   const amountLabel =
-    mode === "g"
-      ? `${fmt(amount, amount % 1 ? 1 : 0)} г`
-      : unit === "g"
-        ? `${fmt(pieces, pieces % 1 ? 1 : 0)} шт · ${fmt(amount, amount % 1 ? 1 : 0)} г`
-        : `${fmt(pieces, pieces % 1 ? 1 : 0)} шт · ${fmt(nutrients.kcal)} ккал`;
-  const ready = mode === "g" ? amount > 0 : unit === "g" ? amount > 0 : (perKcal > 0 ? amount > 0 : nutrients.kcal > 0);
+    unit === "g"
+      ? `${fmt(pieces, pieces % 1 ? 1 : 0)} порц. · ${fmt(amount, amount % 1 ? 1 : 0)} г`
+      : `${fmt(pieces, pieces % 1 ? 1 : 0)} порц. · ${fmt(nutrients.kcal)} ккал`;
+  const ready = unit === "g" ? amount > 0 : perKcal > 0 ? amount > 0 : nutrients.kcal > 0;
   return (
     <div data-sheet className="sheet-panel">
       <div className="card p-4">
         <p className="font-semibold">{food.name}</p>
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <button type="button" className="chip w-full" data-on={mode === "g"} onClick={() => setMode("g")}>
-            Граммы
+          <button type="button" className="chip w-full" data-on={unit === "g"} onClick={() => setUnit("g")}>
+            В граммах
           </button>
-          <button type="button" className="chip w-full" data-on={mode === "pc"} onClick={() => setMode("pc")}>
-            Штуки
+          <button type="button" className="chip w-full" data-on={unit === "kcal"} onClick={() => setUnit("kcal")}>
+            В ккал
           </button>
         </div>
-        {mode === "g" ? (
-          <>
-            <Field label="Граммы">
-              <input className="field tabular-nums" inputMode="decimal" enterKeyHint="done" autoComplete="off" value={grams} onChange={(event) => setGrams(event.target.value)} />
-            </Field>
-            <div className="mt-2 flex gap-2">
-              {["50", "100", "150", "200"].map((value) => (
-                <button key={value} type="button" className="chip" data-on={grams === value} onClick={() => setGrams(value)}>
-                  {value}
-                </button>
-              ))}
-            </div>
-          </>
-        ) : (
-          <>
-            <p className="mt-3 text-sm text-muted">
-              {unit === "g" ? "Вес одной штуки — с пачки. Потом сколько съели." : "Калории одной штуки — с пачки. БЖУ посчитаем по составу продукта."}
-            </p>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <button type="button" className="chip w-full" data-on={unit === "g"} onClick={() => setUnit("g")}>
-                Вес
-              </button>
-              <button type="button" className="chip w-full" data-on={unit === "kcal"} onClick={() => setUnit("kcal")}>
-                Ккал
-              </button>
-            </div>
-            <div className="mt-2 grid grid-cols-2 gap-3">
-              <Field label={unit === "g" ? "Одна штука, г" : "Одна штука, ккал"}>
-                <input
-                  className="field tabular-nums"
-                  inputMode="decimal"
-                  enterKeyHint="done"
-                  autoComplete="off"
-                  placeholder="с пачки"
-                  value={unit === "g" ? pieceG : pieceK}
-                  onChange={(event) => (unit === "g" ? setPieceG(event.target.value) : setPieceK(event.target.value))}
-                />
-              </Field>
-              <Field label="Сколько">
-                <input className="field tabular-nums" inputMode="decimal" enterKeyHint="done" autoComplete="off" value={count} onChange={(event) => setCount(event.target.value)} />
-              </Field>
-            </div>
-            <div className="mt-2 flex gap-2">
-              {["1", "2", "3", "4"].map((value) => (
-                <button key={value} type="button" className="chip" data-on={count === value} onClick={() => setCount(value)}>
-                  {value}
-                </button>
-              ))}
-            </div>
-            {unit === "g" && oneG > 0 && pieces > 0 ? (
-              <p className="mt-2 tabular-nums text-sm text-muted">
-                {fmt(pieces, pieces % 1 ? 1 : 0)} × {fmt(oneG, oneG % 1 ? 1 : 0)} г = {fmt(amount, amount % 1 ? 1 : 0)} г
-              </p>
-            ) : null}
-            {unit === "kcal" && oneK > 0 && pieces > 0 ? (
-              <p className="mt-2 tabular-nums text-sm text-muted">
-                {fmt(pieces, pieces % 1 ? 1 : 0)} × {fmt(oneK, oneK % 1 ? 1 : 0)} ккал
-              </p>
-            ) : null}
-          </>
-        )}
+        <div className="mt-2 grid grid-cols-2 gap-3">
+          <Field label={unit === "g" ? "Вес одной порции, г" : "Одна порция, ккал"}>
+            <input
+              className="field tabular-nums"
+              inputMode="decimal"
+              enterKeyHint="done"
+              autoComplete="off"
+              value={unit === "g" ? pieceG : pieceK}
+              onChange={(event) => (unit === "g" ? setPieceG(event.target.value) : setPieceK(event.target.value))}
+            />
+          </Field>
+          <Field label="Сколько порций">
+            <input className="field tabular-nums" inputMode="decimal" enterKeyHint="done" autoComplete="off" value={count} onChange={(event) => setCount(event.target.value)} />
+          </Field>
+        </div>
+        <div className="mt-2 flex gap-2">
+          {["1", "2", "3", "4"].map((value) => (
+            <button key={value} type="button" className="chip" data-on={count === value} onClick={() => setCount(value)}>
+              {value}
+            </button>
+          ))}
+        </div>
+        {unit === "g" && oneG > 0 && pieces > 0 ? (
+          <p className="mt-2 tabular-nums text-sm text-muted">
+            {fmt(pieces, pieces % 1 ? 1 : 0)} × {fmt(oneG, oneG % 1 ? 1 : 0)} г = {fmt(amount, amount % 1 ? 1 : 0)} г
+          </p>
+        ) : null}
+        {unit === "kcal" && oneK > 0 && pieces > 0 ? (
+          <p className="mt-2 tabular-nums text-sm text-muted">
+            {fmt(pieces, pieces % 1 ? 1 : 0)} × {fmt(oneK, oneK % 1 ? 1 : 0)} ккал
+          </p>
+        ) : null}
         <p className="mt-3 tabular-nums text-sm text-muted">
           {fmt(nutrients.kcal)} ккал · Б {fmt(nutrients.protein, 1)} · Ж {fmt(nutrients.fat, 1)} · У {fmt(nutrients.carbs, 1)}
         </p>
@@ -328,8 +293,8 @@ function PortionFood({ food, onClose }: { food: FoodItem; onClose: () => void })
             className="btn btn-primary"
             disabled={!ready}
             onClick={() => {
-              if (mode === "pc" && unit === "g" && oneG > 0) rememberPiece(key, oneG, "g", food.id);
-              if (mode === "pc" && unit === "kcal" && oneK > 0) rememberPiece(key, oneK, "kcal", food.id);
+              if (unit === "g" && oneG > 0) rememberPiece(key, oneG, "g", food.id);
+              if (unit === "kcal" && oneK > 0) rememberPiece(key, oneK, "kcal", food.id);
               saveFoodProfile(food, per100);
               log(food.name, amountLabel, nutrients);
               onClose();

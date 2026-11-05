@@ -1,5 +1,5 @@
 type ZxingReader = {
-  decodeFromCanvas: (canvas: HTMLCanvasElement) => { getText: () => string };
+  decodeFromCanvas: (canvas: HTMLCanvasElement) => Promise<string | null>;
   decodeFromConstraints: (
     constraints: MediaStreamConstraints,
     preview: HTMLVideoElement,
@@ -7,27 +7,88 @@ type ZxingReader = {
   ) => Promise<{ stop: () => void }>;
 };
 
+// Разбор штрихкода на WebAssembly (zxing-wasm, ZXing-C++). В Safari на iPhone нет встроенного
+// BarcodeDetector, а чисто JS-библиотеки здесь заметно слабее. Файл .wasm отдаётся с нашего же сайта.
+const FORMATS = ["EAN13", "EAN8", "UPCA", "UPCE", "Code128"] as const;
+let wasmReady = false;
+
+async function engine() {
+  const mod = await import("zxing-wasm/reader");
+  if (!wasmReady) {
+    const { default: wasmUrl } = await import("zxing-wasm/reader/zxing_reader.wasm?url");
+    mod.prepareZXingModule({
+      overrides: { locateFile: (path: string, prefix: string) => (path.endsWith(".wasm") ? wasmUrl : prefix + path) },
+    });
+    wasmReady = true;
+  }
+  return mod;
+}
+
+function digitsOk(text: string) {
+  return text.replace(/\D/g, "").length >= 8;
+}
+
 async function productReader(): Promise<ZxingReader> {
-  const libMod = (await import("@zxing/library")) as unknown as { default?: Record<string, unknown> } & Record<string, unknown>;
-  const browserMod = (await import("@zxing/browser")) as unknown as {
-    default?: { BrowserMultiFormatReader?: new (hints: Map<unknown, unknown>, options: object) => ZxingReader };
-    BrowserMultiFormatReader?: new (hints: Map<unknown, unknown>, options: object) => ZxingReader;
+  const { readBarcodes } = await engine();
+  const common = { formats: [...FORMATS], tryHarder: true, tryRotate: true, tryDownscale: true, maxNumberOfSymbols: 1 };
+  // Разные режимы бинаризации выручают разные кадры (смазанные, малоконтрастные, с бликом),
+  // поэтому от кадра к кадру перебираем их по кругу.
+  const modes = [
+    { ...common, tryInvert: false },
+    { ...common, tryInvert: false, binarizer: "FixedThreshold" as const },
+    { ...common, tryInvert: false, binarizer: "GlobalHistogram" as const },
+  ];
+  let frameNo = 0;
+  return {
+    decodeFromCanvas: async (canvas) => {
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) return null;
+      const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      for (const mode of modes) {
+        const results = await readBarcodes(image, { ...mode, tryInvert: true });
+        const hit = results.find((item) => item.isValid && digitsOk(item.text));
+        if (hit) return hit.text;
+      }
+      return null;
+    },
+    decodeFromConstraints: async (constraints, video, callback) => {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject = stream;
+      video.muted = true;
+      video.setAttribute("playsinline", "true");
+      await video.play().catch(() => undefined);
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      let stopped = false;
+      let timer = 0;
+      const tick = async () => {
+        if (stopped) return;
+        try {
+          if (ctx && video.readyState >= 2 && video.videoWidth > 1) {
+            const scale = Math.min(1, 1280 / Math.max(video.videoWidth, video.videoHeight));
+            canvas.width = Math.round(video.videoWidth * scale);
+            canvas.height = Math.round(video.videoHeight * scale);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const results = await readBarcodes(ctx.getImageData(0, 0, canvas.width, canvas.height), modes[frameNo++ % modes.length]);
+            const hit = results.find((item) => item.isValid && digitsOk(item.text));
+            if (hit && !stopped) callback({ getText: () => hit.text });
+          }
+        } catch {
+          // Кадр не разобрался, берём следующий.
+        }
+        if (!stopped) timer = window.setTimeout(() => void tick(), 120);
+      };
+      void tick();
+      return {
+        stop: () => {
+          stopped = true;
+          window.clearTimeout(timer);
+          stream.getTracks().forEach((track) => track.stop());
+          video.srcObject = null;
+        },
+      };
+    },
   };
-  const lib = libMod.default ?? libMod;
-  const BarcodeFormat = lib.BarcodeFormat as Record<string, unknown> | undefined;
-  const DecodeHintType = lib.DecodeHintType as Record<string, unknown> | undefined;
-  const Ctor = browserMod.BrowserMultiFormatReader ?? browserMod.default?.BrowserMultiFormatReader;
-  if (!BarcodeFormat || !DecodeHintType || !Ctor) throw new Error("Сканер недоступен");
-  const hints = new Map<unknown, unknown>();
-  hints.set(DecodeHintType.TRY_HARDER, true);
-  hints.set(DecodeHintType.POSSIBLE_FORMATS, [
-    BarcodeFormat.UPC_A,
-    BarcodeFormat.UPC_E,
-    BarcodeFormat.EAN_13,
-    BarcodeFormat.EAN_8,
-    BarcodeFormat.CODE_128,
-  ]);
-  return new Ctor(hints, { delayBetweenScanAttempts: 200, tryPlayVideoTimeout: 8000 });
 }
 
 export { productReader };
@@ -153,8 +214,8 @@ export async function decodeBarcodeFile(file: File): Promise<string | null> {
       const nativeCanvas = await detectNative(canvas);
       if (nativeCanvas) return nativeCanvas;
       try {
-        const text = reader.decodeFromCanvas(canvas).getText().replace(/\s/g, "");
-        if (text.replace(/\D/g, "").length >= 8) return text;
+        const text = await reader.decodeFromCanvas(canvas);
+        if (text) return text.replace(/\s/g, "");
       } catch {
         // Следующий поворот или контраст.
       }
