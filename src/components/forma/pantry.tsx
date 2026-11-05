@@ -63,7 +63,7 @@ function useLog() {
   const setBanner = useForma((state) => state.setBanner);
   return (name: string, amountLabel: string, nutrients: Nutrients) => {
     addLog({ date, meal, name, amountLabel, nutrients });
-    setBanner(`${name}: ${fmt(nutrients.kcal)} ккал`);
+    setBanner(`+${fmt(nutrients.kcal)} ккал\n${name}`);
   };
 }
 

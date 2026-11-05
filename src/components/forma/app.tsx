@@ -40,13 +40,53 @@ export function FormaApp() {
   return <Ready />;
 }
 
+// Подтверждения действий: крупный «+210 ккал» / «−28 ккал» на секунду, потом исчезает.
+// Остальные сообщения (напоминания, ошибки) показываются плашкой чуть дольше, закрываются касанием.
+function Toast() {
+  const banner = useForma((state) => state.banner);
+  const seq = useForma((state) => state.bannerSeq);
+  const setBanner = useForma((state) => state.setBanner);
+  const big = banner ? /^[+−-]/.test(banner) : false;
+  useEffect(() => {
+    if (!banner) return;
+    const id = window.setTimeout(() => setBanner(null), big ? 1300 : 4000);
+    return () => window.clearTimeout(id);
+  }, [banner, seq, big, setBanner]);
+  if (!banner) return null;
+  const [head, ...rest] = banner.split("\n");
+  if (big) {
+    return (
+      <div key={seq} role="status" aria-live="polite" className="toast-pop pointer-events-none fixed inset-0 z-50 flex items-center justify-center px-6" style={{ animationDuration: "1.3s" }}>
+        <div className="rounded-3xl border border-border bg-surface/95 px-8 py-5 text-center shadow-2xl">
+          <span className="block whitespace-nowrap font-display tabular-nums">
+            <span className="text-6xl">{head.replace(/\s*ккал$/, "")}</span>
+            {head.endsWith("ккал") ? <span className="ml-2 text-2xl text-muted">ккал</span> : null}
+          </span>
+          {rest.length > 0 ? <span className="mt-1 block text-sm text-muted">{rest.join(" ")}</span> : null}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <button
+      key={seq}
+      type="button"
+      role="status"
+      aria-live="polite"
+      className="toast-pop fixed inset-x-4 top-16 z-50 mx-auto max-w-md rounded-2xl border border-border bg-surface px-4 py-3 text-left text-sm shadow-2xl"
+      style={{ animationDuration: "4s" }}
+      onClick={() => setBanner(null)}
+    >
+      {banner}
+    </button>
+  );
+}
+
 function Ready() {
   const profile = useForma((state) => state.profile);
   const saveProfile = useForma((state) => state.saveProfile);
   const tab = useForma((state) => state.tab);
   const setTab = useForma((state) => state.setTab);
-  const banner = useForma((state) => state.banner);
-  const setBanner = useForma((state) => state.setBanner);
   const reminders = useForma((state) => state.reminders);
 
   useEffect(() => {
@@ -97,14 +137,7 @@ function Ready() {
     <>
       <KeyboardInset />
       <main className="mx-auto min-h-dvh max-w-lg bg-bg pb-[calc(7rem+var(--kb,0px))] text-fg">
-      {banner ? (
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-border bg-surface px-5 py-3 text-sm">
-          <p>{banner}</p>
-          <button type="button" className="font-semibold text-primary" onClick={() => setBanner(null)}>
-            Ок
-          </button>
-        </div>
-      ) : null}
+      <Toast />
       {tab === "today" ? <TodayScreen /> : null}
       {tab === "food" ? <FoodScreen /> : null}
       {tab === "progress" ? <ProgressScreen /> : null}

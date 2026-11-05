@@ -296,7 +296,7 @@ export function TodayScreen() {
               const kcal = stepsKcal(count, profile.weightKg);
               addActivity({ date, kind: "steps", label: "Шаги", kcal, detail: `${fmt(count)} шагов` });
               setSteps("");
-              setBanner(`Шаги: −${fmt(kcal)} ккал`);
+              setBanner(`−${fmt(kcal)} ккал\nШаги`);
             }}
           >
             Записать
@@ -312,7 +312,7 @@ export function TodayScreen() {
                 const mins = Number(minutes) || 30;
                 const kcal = metKcal(item.met, profile.weightKg, mins);
                 addActivity({ date, kind: item.kind, label: item.label, kcal, detail: `${mins} мин` });
-                setBanner(`${item.label}: −${fmt(kcal)} ккал`);
+                setBanner(`−${fmt(kcal)} ккал\n${item.label}`);
               }}
             >
               {item.label}

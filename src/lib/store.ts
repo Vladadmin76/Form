@@ -77,6 +77,7 @@ type Ui = {
   selectedDate: string;
   pendingMeal: MealSlot;
   banner: string | null;
+  bannerSeq: number;
 };
 
 type Actions = {
@@ -158,6 +159,7 @@ export const useForma = create<Data & Ui & Actions>()(
       selectedDate: dayKey(),
       pendingMeal: suggestMeal(),
       banner: null,
+      bannerSeq: 0,
       setTab: (tab) => set({ tab }),
       setDate: (selectedDate) => set({ selectedDate }),
       shiftDate: (delta) => {
@@ -167,7 +169,7 @@ export const useForma = create<Data & Ui & Actions>()(
         set({ selectedDate: next });
       },
       setPendingMeal: (pendingMeal) => set({ pendingMeal }),
-      setBanner: (banner) => set({ banner }),
+      setBanner: (banner) => set({ banner, bannerSeq: get().bannerSeq + 1 }),
       saveProfile: (profile, opts) => {
         const today = dayKey();
         const prev = get().profile;
