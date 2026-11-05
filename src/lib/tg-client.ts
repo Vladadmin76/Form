@@ -56,19 +56,21 @@ export const tgWater = (body: { day: string; ml: number; goal: number; ack: numb
 const LINKED = "forma-tg-linked";
 export function setLinked(on: boolean) {
   try {
-    if (on) localStorage.setItem(LINKED, "1");
-    else localStorage.removeItem(LINKED);
+    localStorage.setItem(LINKED, on ? "1" : "0");
   } catch {
     // Хранилище недоступно.
   }
 }
-export function isLinked(): boolean {
+/** "1": подключён, "0": не подключён, null: ещё не проверяли (например, бота подключили в старой версии). */
+export function linkedState(): "1" | "0" | null {
   try {
-    return localStorage.getItem(LINKED) === "1";
+    const value = localStorage.getItem(LINKED);
+    return value === "1" || value === "0" ? value : null;
   } catch {
-    return false;
+    return "0";
   }
 }
+export const isLinked = () => linkedState() === "1";
 
 export const toTime = (minute: number) => `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
 export const fromTime = (value: string) => {

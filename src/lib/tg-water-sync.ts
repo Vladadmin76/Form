@@ -2,10 +2,11 @@
 // «сегодня выпито / цель» (нужно боту для ответов и «умных» напоминаний).
 import { dayKey } from "@/lib/nutrition";
 import { useForma } from "@/lib/store";
-import { isLinked, setLinked, tgWater } from "@/lib/tg-client";
+import { isLinked, linkedState, setLinked, tgStatus, tgWater } from "@/lib/tg-client";
 
 const APPLIED = "forma-tg-applied";
 let running = false;
+let probed = false;
 
 function loadApplied(): number[] {
   try {
@@ -25,11 +26,18 @@ function saveApplied(ids: number[]) {
 }
 
 export async function syncWater(): Promise<void> {
-  if (running || !isLinked()) return;
+  if (running) return;
   const profile = useForma.getState().profile;
   if (!profile) return;
   running = true;
   try {
+    // Статус подключения ещё неизвестен (бота подключили до этой версии): один раз спрашиваем сервер.
+    if (linkedState() === null && !probed) {
+      probed = true;
+      const status = await tgStatus();
+      if (status.data?.available) setLinked(Boolean(status.data.connected));
+    }
+    if (!isLinked()) return;
     const report = (ack: number[]) => {
       const today = dayKey();
       return tgWater({ day: today, ml: useForma.getState().water[today] ?? 0, goal: profile.waterGoalMl, ack });
