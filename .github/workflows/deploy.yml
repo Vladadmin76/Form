@@ -44,7 +44,7 @@ jobs:
 
       - name: Set Telegram bot secret
         if: env.CLOUDFLARE_API_TOKEN != '' && env.TELEGRAM_BOT_TOKEN != ''
-        run: printf '%s' "$TELEGRAM_BOT_TOKEN" | npx wrangler secret put TELEGRAM_BOT_TOKEN
+        run: printf '%s' "$TELEGRAM_BOT_TOKEN" | npx wrangler secret put TELEGRAM_BOT_TOKEN --name forma
 
       - name: Set Telegram webhook
         if: env.CLOUDFLARE_API_TOKEN != '' && env.TELEGRAM_BOT_TOKEN != ''

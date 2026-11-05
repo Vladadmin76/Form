@@ -46,6 +46,7 @@
   Проверено локально в `wrangler dev` с поддельным Telegram (23 проверки: привязка, повторный токен, чужой секрет вебхука, группы,
   cron без дублей, 403, `/stop`, лимит ссылок) и в браузере (экран профиля). Тесты расписания: `src/lib/tg-schedule.test.ts`.
   НЕ проверено на настоящем Cloudflare/Telegram: нужен секрет `TELEGRAM_BOT_TOKEN` в GitHub и право «D1: Edit» у токена Cloudflare.
+- 2026-11-05: первая выкладка с Telegram прошла по шагам: база D1 `forma` создана и привязана (`env.DB`), cron `*/15 * * * *` задеплоен. Шаг записи секрета `wrangler secret put` падал («Required Worker name missing»): добавлено `--name forma`.
 - Деплой выполнен 2026-11-04: https://forma.ladimir2013.workers.dev (Cloudflare Workers, Worker `forma`, запуск `Run workflow` в Actions, run #2). Сайт отвечает 200, манифест 200. Токен `CLOUDFLARE_API_TOKEN` в Secrets репозитория. Ключ `DEEPSEEK_API_KEY` в Worker'е ещё не задан (до этого фраза дня из запасных, фото блюда недоступно). Основной путь — Cloudflare (`docs/cloudflare.md`). `docs/server.md` — запасной вариант со своим сервером (устарел: пресет теперь Cloudflare, для сервера нужен `node-server`).
 
 ## Нельзя
