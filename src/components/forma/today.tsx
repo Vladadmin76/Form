@@ -233,7 +233,7 @@ export function TodayScreen() {
               </p>
             </div>
           </div>
-          <p className="tabular-nums text-sm text-muted">
+          <p className="whitespace-nowrap tabular-nums text-sm text-muted">
             {fmt(drunk)} / {fmt(profile.waterGoalMl)}
           </p>
         </div>
@@ -250,7 +250,11 @@ export function TodayScreen() {
                 onClick={() => addWater(date, next - drunk)}
               >
                 <Glass fill={fill} label={`g-${date}-${index}`} />
-                <span className="text-[10px] tabular-nums text-muted">{index + 1}</span>
+                {fill > 0 && fill < 1 ? (
+                  <span className="text-[10px] font-semibold tabular-nums text-[#6eb3c9]">{fill === 0.5 ? "½" : `${Math.round(fill * 100)}%`}</span>
+                ) : (
+                  <span className="text-[10px] tabular-nums text-muted">{index + 1}</span>
+                )}
               </button>
             );
           })}

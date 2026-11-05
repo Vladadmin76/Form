@@ -71,7 +71,7 @@ function pick(list: string[], seed: string): string {
   return list[hash % list.length];
 }
 
-export type DueReminder = { key: string; text: string };
+export type DueReminder = { key: string; text: string; kind: "water" | "meal" };
 
 /**
  * Какие напоминания нужно отправить в окне (now - windowMin, now].
@@ -95,12 +95,12 @@ export function dueReminders(prefs: TgPrefs, sent: string[], nowMs: number, wind
     if (prefs.water.on) {
       for (let minute = prefs.water.from; minute <= prefs.water.to; minute += prefs.water.every) {
         const key = `w:${slice.day}:${minute}`;
-        if (inside(minute) && !done.has(key)) result.push({ key, text: pick(WATER_TEXTS, key) });
+        if (inside(minute) && !done.has(key)) result.push({ key, text: pick(WATER_TEXTS, key), kind: "water" });
       }
     }
     for (const meal of prefs.meals) {
       const key = `m:${meal.id}:${slice.day}`;
-      if (inside(meal.minute) && !done.has(key)) result.push({ key, text: `🍽 ${meal.label}: загляните в «Форму» и запишите приём пищи.` });
+      if (inside(meal.minute) && !done.has(key)) result.push({ key, text: `🍽 ${meal.label}: загляните в «Форму» и запишите приём пищи.`, kind: "meal" });
     }
   }
   return result;

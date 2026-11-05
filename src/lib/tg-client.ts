@@ -49,6 +49,26 @@ export const tgLink = () => call<{ url: string; expiresInMin: number }>("link", 
 export const tgSavePrefs = (prefs: TgPrefs) => call<{ ok: boolean }>("prefs", prefs);
 export const tgTest = () => call<{ ok: boolean }>("test", {});
 export const tgUnlink = () => call<{ ok: boolean }>("unlink", {});
+export type WaterEvent = { id: number; day: string; ml: number };
+export const tgWater = (body: { day: string; ml: number; goal: number; ack: number[] }) => call<{ events: WaterEvent[] }>("water", body);
+
+// Признак «этот телефон подключён к боту» нужен, чтобы приложение само забирало воду из бота, не спрашивая сервер зря.
+const LINKED = "forma-tg-linked";
+export function setLinked(on: boolean) {
+  try {
+    if (on) localStorage.setItem(LINKED, "1");
+    else localStorage.removeItem(LINKED);
+  } catch {
+    // Хранилище недоступно.
+  }
+}
+export function isLinked(): boolean {
+  try {
+    return localStorage.getItem(LINKED) === "1";
+  } catch {
+    return false;
+  }
+}
 
 export const toTime = (minute: number) => `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
 export const fromTime = (value: string) => {

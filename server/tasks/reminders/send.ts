@@ -1,6 +1,6 @@
 import { defineTask } from "nitro/task";
-import { dueReminders, nextSent, type TgMeal, type TgPrefs } from "../../../src/lib/tg-schedule";
-import { configured, getEnv, tg } from "../../utils/tg";
+import { dueReminders, localParts, nextSent, type TgMeal, type TgPrefs } from "../../../src/lib/tg-schedule";
+import { configured, GLASS_KEYBOARD, getEnv, mlText, tg, waterToday } from "../../utils/tg";
 
 type Row = {
   device_hash: string;
@@ -42,13 +42,27 @@ export default defineTask({
         // Битые данные считаем пустыми.
       }
       const prefs: TgPrefs = { tz: row.tz, water: { on: row.water_on === 1, from: row.water_from, to: row.water_to, every: row.water_every }, meals };
-      const due = dueReminders(prefs, sent, now).slice(0, budget);
+      let due = dueReminders(prefs, sent, now).slice(0, budget);
       if (due.length === 0) continue;
+
+      // Умные напоминания про воду: цель выполнена, значит не беспокоим; иначе показываем прогресс и кнопки.
+      let progress = "";
+      if (due.some((item) => item.kind === "water")) {
+        const { total, goal } = await waterToday(env, row.device_hash, localParts(now, row.tz).day);
+        if (goal > 0 && total >= goal) due = due.filter((item) => item.kind !== "water");
+        else if (goal > 0) progress = ` Сегодня ${mlText(total)} из ${mlText(goal)}.`;
+        if (due.length === 0) continue;
+      }
 
       const done: string[] = [];
       let failure: { code?: number; description?: string } | null = null;
       for (const item of due) {
-        const res = await tg(env, "sendMessage", { chat_id: row.chat_id, text: item.text });
+        const water = item.kind === "water";
+        const res = await tg(env, "sendMessage", {
+          chat_id: row.chat_id,
+          text: water ? item.text + progress : item.text,
+          ...(water ? { reply_markup: GLASS_KEYBOARD } : {}),
+        });
         budget -= 1;
         if (res.ok) {
           done.push(item.key);
@@ -72,6 +86,8 @@ export default defineTask({
           .run();
       }
     }
+    // Уборка: старые подтверждённые записи воды и совсем старые невостребованные.
+    await env.DB.prepare("DELETE FROM tg_water WHERE (claimed = 1 AND created_at < ?) OR created_at < ?").bind(now - 7 * 86_400_000, now - 30 * 86_400_000).run();
     return { result: `sent ${sentTotal}` };
   },
 });

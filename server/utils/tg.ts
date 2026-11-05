@@ -81,3 +81,27 @@ export async function deviceHash(req: { headers: Headers }): Promise<string | nu
   if (!/^[A-Za-z0-9_-]{32,128}$/.test(secret)) return null;
   return sha256Hex(`forma-device:${secret}`);
 }
+
+export const GLASS_KEYBOARD = {
+  inline_keyboard: [[{ text: "1 стакан (200 мл)", callback_data: "w:200" }, { text: "2 стакана", callback_data: "w:400" }]],
+};
+
+const mlText = (ml: number) => `${String(Math.round(ml)).replace(/\B(?=(\d{3})+(?!\d))/g, " ")} мл`;
+
+/** Сколько воды сегодня: последнее, что сообщило приложение, плюс записи из бота, которые приложение ещё не забрало. */
+export async function waterToday(env: TgEnv & { DB: D1 }, device: string, day: string): Promise<{ total: number; goal: number }> {
+  const state = await env.DB.prepare("SELECT day, ml, goal FROM tg_water_state WHERE device_hash = ?")
+    .bind(device)
+    .first<{ day: string; ml: number; goal: number }>();
+  const extra = await env.DB.prepare("SELECT COALESCE(SUM(ml), 0) AS ml FROM tg_water WHERE device_hash = ? AND day = ? AND claimed = 0")
+    .bind(device, day)
+    .first<{ ml: number }>();
+  return { total: (state && state.day === day ? state.ml : 0) + (extra?.ml ?? 0), goal: state?.goal ?? 0 };
+}
+
+export function waterLine(total: number, goal: number): string {
+  if (goal <= 0) return "";
+  return total >= goal ? ` Сегодня ${mlText(total)} из ${mlText(goal)}. Цель выполнена!` : ` Сегодня ${mlText(total)} из ${mlText(goal)}.`;
+}
+
+export { mlText };

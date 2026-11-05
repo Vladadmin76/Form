@@ -3,7 +3,7 @@
 // тогда сайт выкладывается без Telegram-напоминаний, а не ломается.
 // Нужно право токена Cloudflare «D1: Edit».
 import { execFileSync } from "node:child_process";
-import { appendFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -28,7 +28,11 @@ try {
   // wrangler ищет базу по привязке в конфиге, поэтому даём временный конфиг.
   const config = join(tmpdir(), "forma-d1.json");
   writeFileSync(config, JSON.stringify({ name: "forma-migrate", d1_databases: [{ binding: "DB", database_name: NAME, database_id: id }] }));
-  run(["d1", "execute", NAME, "--remote", "--config", config, "--file", "migrations/d1/001_telegram.sql"]);
+  // Миграции идемпотентны (IF NOT EXISTS), поэтому накатываем все по порядку при каждой выкладке.
+  for (const file of readdirSync("migrations/d1").filter((name) => name.endsWith(".sql")).sort()) {
+    run(["d1", "execute", NAME, "--remote", "--config", config, "--file", `migrations/d1/${file}`]);
+    console.log(`D1: ${file}`);
+  }
   console.log("D1: база готова");
   output(id);
 } catch (error) {

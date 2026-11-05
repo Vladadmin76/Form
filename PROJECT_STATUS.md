@@ -47,6 +47,9 @@
   cron без дублей, 403, `/stop`, лимит ссылок) и в браузере (экран профиля). Тесты расписания: `src/lib/tg-schedule.test.ts`.
   НЕ проверено на настоящем Cloudflare/Telegram: нужен секрет `TELEGRAM_BOT_TOKEN` в GitHub и право «D1: Edit» у токена Cloudflare.
 - 2026-11-05: первая выкладка с Telegram прошла по шагам: база D1 `forma` создана и привязана (`env.DB`), cron `*/15 * * * *` задеплоен. Шаг записи секрета `wrangler secret put` падал («Required Worker name missing»): добавлено `--name forma`.
+- 2026-11-05: вода из Telegram. Боту можно писать «выпил», «2 стакана», «400 мл», «полстакана» (`src/lib/tg-water.ts`, 7 тестов), `/undo`; кнопки «1 стакан»/«2 стакана» под напоминанием; ответ с прогрессом; напоминания про воду не приходят, когда цель выполнена.
+  Приложение само забирает записи (`src/lib/tg-water-sync.ts`, `TgWaterSync` в `app.tsx`, маршрут `/api/telegram/water`) и сообщает серверу «сегодня выпито / цель». Таблицы D1 `tg_water`, `tg_water_state` (`migrations/d1/002_water.sql`). Под частично заполненным стаканом подпись «½» / «NN%».
+  Проверено локально с поддельным Telegram (20 проверок) и в браузере; на настоящем Telegram не проверялось.
 - Деплой выполнен 2026-11-04: https://forma.ladimir2013.workers.dev (Cloudflare Workers, Worker `forma`, запуск `Run workflow` в Actions, run #2). Сайт отвечает 200, манифест 200. Токен `CLOUDFLARE_API_TOKEN` в Secrets репозитория. Ключ `DEEPSEEK_API_KEY` в Worker'е ещё не задан (до этого фраза дня из запасных, фото блюда недоступно). Основной путь — Cloudflare (`docs/cloudflare.md`). `docs/server.md` — запасной вариант со своим сервером (устарел: пресет теперь Cloudflare, для сервера нужен `node-server`).
 
 ## Нельзя

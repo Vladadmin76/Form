@@ -40,10 +40,10 @@ if (!me.ok) {
 }
 console.log(`Telegram: бот @${me.result.username}`);
 
-const hook = await tg("setWebhook", { url: `${site}/api/telegram/webhook`, secret_token: secret, allowed_updates: ["message"], max_connections: 20 });
+const hook = await tg("setWebhook", { url: `${site}/api/telegram/webhook`, secret_token: secret, allowed_updates: ["message", "callback_query"], max_connections: 20 });
 if (!hook.ok) {
   console.error(`::error::setWebhook: ${hook.description}`);
   process.exit(1);
 }
-await tg("setMyCommands", { commands: [{ command: "stop", description: "Отключить напоминания" }, { command: "help", description: "Как подключить" }] });
+await tg("setMyCommands", { commands: [{ command: "undo", description: "Отменить последнюю запись воды" }, { command: "stop", description: "Отключить напоминания" }, { command: "help", description: "Как пользоваться" }] });
 console.log(`Telegram: вебхук ${site}/api/telegram/webhook установлен`);

@@ -8,6 +8,7 @@ import { KeyboardInset } from "@/components/forma/keyboard";
 import { ProfileForm } from "@/components/forma/profile-form";
 import { ProfileScreen } from "@/components/forma/profile";
 import { ProgressScreen } from "@/components/forma/progress";
+import { TgWaterSync } from "@/components/forma/tg-water-sync";
 import { TodayScreen } from "@/components/forma/today";
 
 const TABS: { id: TabId; label: string; icon: typeof Salad }[] = [
@@ -138,6 +139,7 @@ function Ready() {
       <KeyboardInset />
       <main className="mx-auto min-h-dvh max-w-lg bg-bg pb-[calc(7rem+var(--kb,0px))] text-fg">
       <Toast />
+      <TgWaterSync />
       {tab === "today" ? <TodayScreen /> : null}
       {tab === "food" ? <FoodScreen /> : null}
       {tab === "progress" ? <ProgressScreen /> : null}

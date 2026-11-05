@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fromTime, toTime, tgLink, tgSavePrefs, tgStatus, tgTest, tgUnlink, type TgStatus } from "@/lib/tg-client";
+import { fromTime, setLinked, toTime, tgLink, tgSavePrefs, tgStatus, tgTest, tgUnlink, type TgStatus } from "@/lib/tg-client";
 import type { TgPrefs, TgWater } from "@/lib/tg-schedule";
 import { useForma } from "@/lib/store";
 import { Card } from "@/components/forma/bits";
@@ -30,6 +30,7 @@ export function TelegramCard() {
     }
     setOffline(false);
     setStatus(res.data);
+    if (res.data.available) setLinked(Boolean(res.data.connected));
     return res.data;
   }, []);
 
@@ -175,6 +176,9 @@ export function TelegramCard() {
               </label>
             </div>
           ) : null}
+          <p className="text-sm text-muted">
+            Воду можно записывать, написав боту: «выпил», «2 стакана», «400 мл», «полстакана». Отмена: /undo. Запись появится в «Форме», когда вы её откроете.
+          </p>
           <p className="text-sm text-muted">Завтрак, обед и ужин берутся из списка «Напоминания» выше (включённые). Сообщение может прийти с опозданием до 15 минут.</p>
           <div className="grid grid-cols-2 gap-2">
             <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => void test()}>
