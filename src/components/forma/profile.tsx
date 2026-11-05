@@ -6,6 +6,7 @@ import type { FastProtocol } from "@/lib/types";
 import { fmt } from "@/lib/format";
 import { Card, Field } from "@/components/forma/bits";
 import { ProfileForm } from "@/components/forma/profile-form";
+import { TelegramCard } from "@/components/forma/telegram";
 
 const WEEK = [
   { id: 1, label: "Пн" },
@@ -150,7 +151,7 @@ export function ProfileScreen() {
 
       <Card>
         <h2 className="font-semibold">Напоминания</h2>
-        <p className="mt-1 text-sm text-muted">Срабатывают, пока дневник открыт. Если браузер разрешит, придёт и системное уведомление.</p>
+        <p className="mt-1 text-sm text-muted">Срабатывают, пока дневник открыт. Чтобы приходили и при закрытом приложении, подключите Telegram ниже.</p>
         <button
           type="button"
           className="btn btn-ghost mt-3"
@@ -195,6 +196,8 @@ export function ProfileScreen() {
           Ещё одно
         </button>
       </Card>
+
+      <TelegramCard />
 
       <Card>
         <h2 className="font-semibold">Резервная копия</h2>

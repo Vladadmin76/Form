@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      SITE_URL: https://forma.ladimir2013.workers.dev
     steps:
       - uses: actions/checkout@v4
 
@@ -21,14 +23,32 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # База D1 для Telegram-напоминаний. При сбое сайт всё равно выкладывается, но без напоминаний.
+      - name: Prepare D1 database
+        id: d1
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        continue-on-error: true
+        run: node scripts/d1-prepare.mjs
+
       - name: Build
         run: npm run build
         env:
           VITE_AUTH_ENABLED: "false"
 
+      - name: Configure D1 binding
+        run: node scripts/inject-d1.mjs "${{ steps.d1.outputs.id }}"
+
       - name: Deploy Worker
         if: env.CLOUDFLARE_API_TOKEN != ''
         run: npx wrangler deploy
+
+      - name: Set Telegram bot secret
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.TELEGRAM_BOT_TOKEN != ''
+        run: printf '%s' "$TELEGRAM_BOT_TOKEN" | npx wrangler secret put TELEGRAM_BOT_TOKEN
+
+      - name: Set Telegram webhook
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.TELEGRAM_BOT_TOKEN != ''
+        run: node scripts/telegram-setup.mjs
 
       - name: Deploy skipped
         if: env.CLOUDFLARE_API_TOKEN == ''

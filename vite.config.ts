@@ -183,6 +183,9 @@ export default defineConfig(({ command, isPreview }) => ({
             // manifest + head-tag middleware). Nitro v3 defaults serverDir to
             // false, so removing this silently unwires /?install=1 on deploys.
             serverDir: "./server",
+            // Напоминания в Telegram: расписание раз в 15 минут (бесплатный тариф: 5 cron на аккаунт).
+            experimental: { tasks: true },
+            scheduledTasks: { "*/15 * * * *": ["reminders:send"] },
           }),
         ]
       : []),
